@@ -50,6 +50,23 @@ canvas#mapCanvas {
   background-position: center;
   cursor: pointer;
 }
+
 .tile-button:hover {
   border: 2px solid #fff;
+}
+
+#eventEditor {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  width: 300px;
+  background: #222;
+  padding: 15px;
+  border: 1px solid #555;
+  border-radius: 5px;
+  z-index: 9999;
+}
+
+#eventEditor.hidden {
+  display: none;
 }
