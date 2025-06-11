@@ -1,45 +1,114 @@
-import { loadTileset } from './tilesetLoader.js';
-import { setupTilePicker } from './tilePicker.js';
-import { saveMap, loadMap } from './saveLoad.js';
-import { drawMap } from './isometric.js';
+import { drawGrid, screenToGrid } from './utils.js';
+import { initTilePicker, selectedTile } from './tilePicker.js';
+import { saveMap, loadMap, createNewMap } from './saveLoad.js';
+import { isoToScreen, screenToIso, TILE_WIDTH, TILE_HEIGHT } from './isometric.js';
 
-let map, tileset, selectedTile = 0, offsetX = 512, offsetY = 256, zoom = 1;
+// Global state
+let mapWidth = 20;
+let mapHeight = 20;
+let layers = ['ground', 'objects', 'collision', 'events'];
+let mapData = {};
+let activeLayer = 'ground';
+let tool = 'paint';
 
-document.addEventListener('DOMContentLoaded', async () => {
-  tileset = await loadTileset();
-  setupTilePicker(tileset, tile => selectedTile = tile);
-  
-  createNewMap();
-  const canvas = document.getElementById('mapCanvas');
-  const ctx = canvas.getContext('2d');
+// Camera and zoom state
+let offsetX = 0;
+let offsetY = 0;
+let zoom = 1;
+let isDragging = false;
+let lastMouseX, lastMouseY;
 
-  canvas.addEventListener('click', e => {
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left - offsetX) / (tileset.tileWidth * zoom / 2) + (e.clientY - rect.top - offsetY) / (tileset.tileHeight * zoom / 4)) / 2;
-    const y = Math.floor((e.clientY - rect.top - offsetY) / (tileset.tileHeight * zoom / 4) - (e.clientX - rect.left - offsetX) / (tileset.tileWidth * zoom / 2)) / 2;
-    if (x >= 0 && y >= 0 && x < map.width && y < map.height) {
-      map.data[Math.floor(y)][Math.floor(x)] = selectedTile;
+// Initialize empty map
+function initEmptyMap() {
+  layers.forEach(layer => {
+    mapData[layer] = [];
+    for (let y = 0; y < mapHeight; y++) {
+      mapData[layer][y] = [];
+      for (let x = 0; x < mapWidth; x++) {
+        mapData[layer][y][x] = -1;
+      }
     }
-    drawMap(ctx, map, tileset, selectedTile, offsetX, offsetY, zoom);
   });
+}
 
-  document.getElementById('saveButton').addEventListener('click', () => saveMap(map));
-  document.getElementById('loadButton').addEventListener('click', () => loadMap(loadedMap => {
-    map = loadedMap;
-    drawMap(ctx, map, tileset, selectedTile, offsetX, offsetY, zoom);
-  }));
-  document.getElementById('newMapBtn').addEventListener('click', () => {
-    createNewMap();
-    drawMap(ctx, map, tileset, selectedTile, offsetX, offsetY, zoom);
-  });
+// Initialize
+createNewMap(mapData, mapWidth, mapHeight);
+initTilePicker();
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
 
-  drawMap(ctx, map, tileset, selectedTile, offsetX, offsetY, zoom);
+// Draw loop
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid(ctx, mapData, mapWidth, mapHeight, offsetX, offsetY, zoom, selectedTile, activeLayer);
+  requestAnimationFrame(draw);
+}
+draw();
+
+// Toolbar Events
+document.getElementById('toolSelector').addEventListener('change', (e) => {
+  tool = e.target.value;
 });
 
-function createNewMap() {
-  map = {
-    width: 64,
-    height: 64,
-    data: Array(64).fill().map(() => Array(64).fill(null))
-  };
+document.getElementById('layerSelector').addEventListener('change', (e) => {
+  activeLayer = e.target.value;
+});
+
+document.getElementById('saveButton').addEventListener('click', () => {
+  saveMap(mapData);
+});
+
+document.getElementById('loadButton').addEventListener('click', () => {
+  loadMap().then(data => {
+    if (data) {
+      mapData = data;
+    }
+  });
+});
+
+// Mouse interaction
+canvas.addEventListener('mousedown', (e) => {
+  if (e.button === 0) {
+    handleCanvasClick(e);
+  } else if (e.button === 1 || e.button === 2) {
+    isDragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  isDragging = false;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    offsetX += (e.clientX - lastMouseX);
+    offsetY += (e.clientY - lastMouseY);
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const zoomAmount = e.deltaY > 0 ? 0.9 : 1.1;
+  zoom *= zoomAmount;
+  zoom = Math.max(0.2, Math.min(zoom, 5));
+});
+
+// Handle painting tiles
+function handleCanvasClick(e) {
+  const rect = canvas.getBoundingClientRect();
+  const screenX = (e.clientX - rect.left - offsetX) / zoom;
+  const screenY = (e.clientY - rect.top - offsetY) / zoom;
+  const [isoX, isoY] = screenToIso(screenX, screenY);
+
+  if (isoX >= 0 && isoY >= 0 && isoX < mapWidth && isoY < mapHeight) {
+    if (tool === 'paint') {
+      mapData[activeLayer][isoY][isoX] = selectedTile;
+    } else if (tool === 'erase') {
+      mapData[activeLayer][isoY][isoX] = -1;
+    }
+  }
 }
