@@ -1,22 +1,11 @@
-import { isoToScreen, TILE_WIDTH, TILE_HEIGHT } from './isometric.js';
-import { tileImage } from './tilePicker.js';
+export function screenToIso(x, y, tileWidth, tileHeight) {
+  let isoX = (x - y) * tileWidth / 2;
+  let isoY = (x + y) * tileHeight / 2;
+  return { isoX, isoY };
+}
 
-export function drawGrid(ctx, mapData, mapWidth, mapHeight, offsetX, offsetY, zoom, selectedTile, activeLayer) {
-  ctx.save();
-  ctx.translate(offsetX, offsetY);
-  ctx.scale(zoom, zoom);
-
-  for (let y = 0; y < mapHeight; y++) {
-    for (let x = 0; x < mapWidth; x++) {
-      const [screenX, screenY] = isoToScreen(x, y);
-      let tile = mapData[activeLayer][y][x];
-      if (tile >= 0) {
-        ctx.drawImage(tileImage, tile * TILE_WIDTH, 0, TILE_WIDTH, TILE_HEIGHT, screenX, screenY, TILE_WIDTH, TILE_HEIGHT);
-      }
-      // optional: draw tile border
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-      ctx.strokeRect(screenX, screenY, TILE_WIDTH, TILE_HEIGHT);
-    }
-  }
-  ctx.restore();
+export function isoToScreen(isoX, isoY, tileWidth, tileHeight) {
+  let x = (isoX / (tileWidth / 2) + isoY / (tileHeight / 2)) / 2;
+  let y = (isoY / (tileHeight / 2) - (isoX / (tileWidth / 2))) / 2;
+  return { x, y };
 }
