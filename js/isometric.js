@@ -1,12 +1,22 @@
-export function isoToScreen(x, y, tileSize) {
-  return {
-    x: (x - y) * tileSize / 2,
-    y: (x + y) * tileSize / 4
-  };
-}
+import { worldToScreen } from './utils.js';
 
-export function screenToIso(screenX, screenY, tileSize) {
-  const isoX = (screenX / (tileSize / 2) + screenY / (tileSize / 4)) / 2;
-  const isoY = (screenY / (tileSize / 4) - screenX / (tileSize / 2)) / 2;
-  return { x: Math.floor(isoX), y: Math.floor(isoY) };
+export function drawMap(ctx, map, tileset, selectedTile, offsetX, offsetY, zoom) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      const tile = map.data[y][x];
+      if (tile === null) continue;
+      
+      const { screenX, screenY } = worldToScreen(x, y, tileset.tileWidth, tileset.tileHeight, offsetX, offsetY, zoom);
+      const sx = (tile % tileset.columns) * tileset.tileWidth;
+      const sy = Math.floor(tile / tileset.columns) * tileset.tileHeight;
+      
+      ctx.drawImage(
+        tileset.image,
+        sx, sy, tileset.tileWidth, tileset.tileHeight,
+        screenX, screenY, tileset.tileWidth * zoom, tileset.tileHeight * zoom
+      );
+    }
+  }
 }
