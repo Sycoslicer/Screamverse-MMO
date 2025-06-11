@@ -1,79 +1,150 @@
-import { TILE_WIDTH, TILE_HEIGHT, MAP_WIDTH, MAP_HEIGHT, TILESET_COLUMNS } from './isometric.js';
-import { screenToIso, isoToScreen } from './utils.js';
-import { loadTilePicker, selectedTile, tilesetImage } from './tilePicker.js';
-import { saveMap, loadMap } from './saveLoad.js';
+import { TILE_SIZE, TILESET, loadTilesetImage, getTileSource } from './utils.js';
+import { drawTilePicker } from './tilePicker.js';
+import { saveMap, loadMapFromFile } from './saveLoad.js';
 
-let canvas = document.getElementById("mapCanvas");
-let ctx = canvas.getContext("2d");
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
+const tilePickerDiv = document.getElementById('tilePicker');
 
-let map = [];
-for (let x = 0; x < MAP_WIDTH; x++) {
-  map[x] = [];
-  for (let y = 0; y < MAP_HEIGHT; y++) {
-    map[x][y] = -1;
-  }
+let mapWidth = 100;
+let mapHeight = 100;
+let currentLayer = 'ground';
+let currentTool = 'paint';
+let selectedTile = 0;
+
+let cameraX = 0;
+let cameraY = 0;
+let scale = 1;
+
+let map = {
+    ground: Array(mapHeight).fill().map(() => Array(mapWidth).fill(0)),
+    objects: Array(mapHeight).fill().map(() => Array(mapWidth).fill(0)),
+    collision: Array(mapHeight).fill().map(() => Array(mapWidth).fill(0)),
+    events: Array(mapHeight).fill().map(() => Array(mapWidth).fill(0))
+};
+
+// Handle tile selection from picker
+tilePickerDiv.addEventListener('click', (e) => {
+    if (e.target.classList.contains('tile-button')) {
+        selectedTile = parseInt(e.target.dataset.tile);
+    }
+});
+
+// Handle tool and layer switching
+document.getElementById('toolSelector').addEventListener('change', (e) => {
+    currentTool = e.target.value;
+});
+document.getElementById('layerSelector').addEventListener('change', (e) => {
+    currentLayer = e.target.value;
+});
+
+// Handle save/load
+document.getElementById('saveButton').addEventListener('click', () => saveMap(map));
+document.getElementById('loadButton').addEventListener('click', () => document.getElementById('fileLoader').click());
+document.getElementById('fileLoader').addEventListener('change', (e) => loadMapFromFile(e, map, redraw));
+
+// Handle map click
+canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) / scale + cameraX;
+    const mouseY = (e.clientY - rect.top) / scale + cameraY;
+    const tileX = Math.floor(mouseX / TILE_SIZE);
+    const tileY = Math.floor(mouseY / TILE_SIZE);
+
+    if (tileX >= 0 && tileX < mapWidth && tileY >= 0 && tileY < mapHeight) {
+        if (currentTool === 'paint') {
+            map[currentLayer][tileY][tileX] = selectedTile;
+        } else if (currentTool === 'erase') {
+            map[currentLayer][tileY][tileX] = 0;
+        }
+        redraw();
+    }
+});
+
+// Camera panning
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+canvas.addEventListener('mousedown', (e) => {
+    if (e.button === 1) { 
+        isPanning = true;
+        panStart.x = e.clientX;
+        panStart.y = e.clientY;
+    }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (isPanning) {
+        cameraX -= (e.clientX - panStart.x) / scale;
+        cameraY -= (e.clientY - panStart.y) / scale;
+        panStart.x = e.clientX;
+        panStart.y = e.clientY;
+        redraw();
+    }
+});
+
+canvas.addEventListener('mouseup', () => isPanning = false);
+canvas.addEventListener('mouseleave', () => isPanning = false);
+
+// Zooming
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomIntensity = 0.1;
+    const mouseX = e.offsetX / scale + cameraX;
+    const mouseY = e.offsetY / scale + cameraY;
+
+    if (e.deltaY < 0) {
+        scale *= 1 + zoomIntensity;
+    } else {
+        scale *= 1 - zoomIntensity;
+    }
+
+    // Keep zoom centered on cursor
+    cameraX = mouseX - e.offsetX / scale;
+    cameraY = mouseY - e.offsetY / scale;
+
+    redraw();
+});
+
+// Main drawing function
+function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let layer of ['ground', 'objects', 'collision', 'events']) {
+        for (let y = 0; y < mapHeight; y++) {
+            for (let x = 0; x < mapWidth; x++) {
+                const tile = map[layer][y][x];
+                if (tile > 0) {
+                    const src = getTileSource(tile);
+                    ctx.drawImage(
+                        TILESET,
+                        src.sx, src.sy, TILE_SIZE, TILE_SIZE,
+                        (x * TILE_SIZE - cameraX) * scale,
+                        (y * TILE_SIZE - cameraY) * scale,
+                        TILE_SIZE * scale, TILE_SIZE * scale
+                    );
+                }
+            }
+        }
+    }
+
+    // Draw grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    for (let x = 0; x <= mapWidth; x++) {
+        ctx.beginPath();
+        ctx.moveTo((x * TILE_SIZE - cameraX) * scale, 0);
+        ctx.lineTo((x * TILE_SIZE - cameraX) * scale, canvas.height);
+        ctx.stroke();
+    }
+    for (let y = 0; y <= mapHeight; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, (y * TILE_SIZE - cameraY) * scale);
+        ctx.lineTo(canvas.width, (y * TILE_SIZE - cameraY) * scale);
+        ctx.stroke();
+    }
 }
 
-function drawMap() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  for (let x = 0; x < MAP_WIDTH; x++) {
-    for (let y = 0; y < MAP_HEIGHT; y++) {
-      const tileIndex = map[x][y];
-      const { isoX, isoY } = screenToIso(x, y, TILE_WIDTH, TILE_HEIGHT);
-      const drawX = (canvas.width / 2) + isoX;
-      const drawY = 100 + isoY;
-
-      if (tileIndex >= 0) {
-        const sx = (tileIndex % TILESET_COLUMNS) * TILE_WIDTH;
-        const sy = Math.floor(tileIndex / TILESET_COLUMNS) * TILE_HEIGHT;
-        ctx.drawImage(tilesetImage, sx, sy, TILE_WIDTH, TILE_HEIGHT, drawX, drawY, TILE_WIDTH, TILE_HEIGHT);
-      } else {
-        ctx.strokeStyle = "rgba(255,255,255,0.1)";
-        ctx.strokeRect(drawX, drawY, TILE_WIDTH, TILE_HEIGHT);
-      }
-    }
-  }
-}
-
-canvas.addEventListener("click", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left - canvas.width / 2;
-  const mouseY = e.clientY - rect.top - 100;
-  const { x, y } = isoToScreen(mouseX, mouseY, TILE_WIDTH, TILE_HEIGHT);
-  const gridX = Math.floor(x);
-  const gridY = Math.floor(y);
-
-  if (gridX >= 0 && gridX < MAP_WIDTH && gridY >= 0 && gridY < MAP_HEIGHT) {
-    map[gridX][gridY] = selectedTile;
-    drawMap();
-  }
+// INIT
+loadTilesetImage(() => {
+    drawTilePicker(tilePickerDiv);
+    redraw();
 });
-
-document.getElementById("newMapButton").addEventListener("click", () => {
-  for (let x = 0; x < MAP_WIDTH; x++) {
-    for (let y = 0; y < MAP_HEIGHT; y++) {
-      map[x][y] = -1;
-    }
-  }
-  drawMap();
-});
-
-document.getElementById("saveButton").addEventListener("click", () => {
-  saveMap(map);
-});
-
-document.getElementById("loadButton").addEventListener("click", () => {
-  document.getElementById("fileLoader").click();
-});
-
-document.getElementById("fileLoader").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  loadMap(file, (loadedMap) => {
-    map = loadedMap;
-    drawMap();
-  });
-});
-
-loadTilePicker();
-drawMap();
