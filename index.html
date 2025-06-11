@@ -2,58 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cipherborne Map Editor</title>
+  <title>Cipherborne Map Editor - Forge 3.1</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
   <div id="toolbar">
+    <button id="newMapBtn">New Map</button>
     <select id="toolSelector">
       <option value="paint">Paint</option>
       <option value="erase">Erase</option>
-      <option value="select">Select</option>
-      <option value="event">Event</option>
     </select>
-
-    <select id="layerSelector">
-      <option value="ground">Ground</option>
-      <option value="objects">Objects</option>
-      <option value="collision">Collision</option>
-      <option value="events">Events</option>
-    </select>
-
     <button id="saveButton">Save</button>
     <button id="loadButton">Load</button>
-    <button id="openEventEditor">Event Editor</button>
     <input type="file" id="fileLoader" style="display:none;">
   </div>
 
   <div id="tilePicker"></div>
-
-  <div id="eventEditor" class="hidden">
-    <h3>Event Editor</h3>
-    <label>Event Type:
-      <select id="eventType">
-        <option value="npc">NPC</option>
-        <option value="item">Item</option>
-        <option value="trigger">Trigger</option>
-        <option value="portal">Portal</option>
-      </select>
-    </label>
-    <br/>
-    <label>Event Data:
-      <input type="text" id="eventData" placeholder="Data..."/>
-    </label>
-    <br/>
-    <button id="saveEvent">Save Event</button>
-    <button id="cancelEvent">Cancel</button>
-  </div>
-
   <canvas id="mapCanvas" width="1024" height="768"></canvas>
 
-  <script type="module" src="js/tilePicker.js"></script>
-  <script type="module" src="js/eventEditor.js"></script>
   <script type="module" src="js/main.js"></script>
-
 </body>
 </html>
