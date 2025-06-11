@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cipherborne Map Editor</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="toolbar">
+    <select id="toolSelector">
+      <option value="paint">Paint</option>
+      <option value="erase">Erase</option>
+      <option value="select">Select</option>
+      <option value="event">Event</option>
+    </select>
+
+    <select id="layerSelector">
+      <option value="ground">Ground</option>
+      <option value="objects">Objects</option>
+      <option value="collision">Collision</option>
+      <option value="events">Events</option>
+    </select>
+
+    <button id="newMapButton">New Map</button>
+    <button id="saveButton">Save</button>
+    <button id="loadButton">Load</button>
+    <input type="file" id="fileLoader" style="display:none;">
+  </div>
+
+  <div id="tilePicker" style="display: flex; flex-wrap: wrap; margin-bottom: 10px;"></div>
+  <script type="module" src="./js/tilePicker.js"></script>
+
+  <canvas id="mapCanvas" width="1024" height="768"></canvas>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
