@@ -1,13 +1,22 @@
-export function worldToScreen(x, y, tileWidth, tileHeight, offsetX, offsetY, zoom) {
-  let screenX = (x - y) * tileWidth / 2 * zoom + offsetX;
-  let screenY = (x + y) * tileHeight / 4 * zoom + offsetY;
-  return { screenX, screenY };
-}
+import { isoToScreen, TILE_WIDTH, TILE_HEIGHT } from './isometric.js';
+import { tileImage } from './tilePicker.js';
 
-export function screenToWorld(screenX, screenY, tileWidth, tileHeight, offsetX, offsetY, zoom) {
-  screenX = (screenX - offsetX) / zoom;
-  screenY = (screenY - offsetY) / zoom;
-  let worldX = (screenY / (tileHeight / 4) + screenX / (tileWidth / 2)) / 2;
-  let worldY = (screenY / (tileHeight / 4) - screenX / (tileWidth / 2)) / 2;
-  return { worldX: Math.floor(worldX), worldY: Math.floor(worldY) };
+export function drawGrid(ctx, mapData, mapWidth, mapHeight, offsetX, offsetY, zoom, selectedTile, activeLayer) {
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+  ctx.scale(zoom, zoom);
+
+  for (let y = 0; y < mapHeight; y++) {
+    for (let x = 0; x < mapWidth; x++) {
+      const [screenX, screenY] = isoToScreen(x, y);
+      let tile = mapData[activeLayer][y][x];
+      if (tile >= 0) {
+        ctx.drawImage(tileImage, tile * TILE_WIDTH, 0, TILE_WIDTH, TILE_HEIGHT, screenX, screenY, TILE_WIDTH, TILE_HEIGHT);
+      }
+      // optional: draw tile border
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.strokeRect(screenX, screenY, TILE_WIDTH, TILE_HEIGHT);
+    }
+  }
+  ctx.restore();
 }
