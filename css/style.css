@@ -17,8 +17,7 @@ body {
   z-index: 999;
 }
 
-#toolbar select,
-#toolbar button {
+#toolbar select, #toolbar button {
   margin-right: 10px;
   padding: 5px 10px;
   font-size: 14px;
@@ -29,22 +28,23 @@ body {
   cursor: pointer;
 }
 
-#toolbar button:hover {
-  background: #444;
-}
-
 canvas#mapCanvas {
   display: block;
-  margin: 60px auto 0;
+  margin: 70px auto 0;
   background: #000;
   border: 1px solid #333;
-  cursor: crosshair;
+}
+
+#tilePicker {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 50px 10px 10px;
 }
 
 .tile-button {
   width: 32px;
   height: 32px;
-  margin: 3px;
+  margin: 2px;
   border: 1px solid #444;
   background-size: cover;
   background-position: center;
@@ -53,20 +53,4 @@ canvas#mapCanvas {
 
 .tile-button:hover {
   border: 2px solid #fff;
-}
-
-#eventEditor {
-  position: fixed;
-  top: 60px;
-  right: 20px;
-  width: 300px;
-  background: #222;
-  padding: 15px;
-  border: 1px solid #555;
-  border-radius: 5px;
-  z-index: 9999;
-}
-
-#eventEditor.hidden {
-  display: none;
 }
