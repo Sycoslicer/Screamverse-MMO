@@ -27,21 +27,14 @@
     <input type="file" id="fileLoader" style="display:none;">
   </div>
 
-  <div id="tilePicker"></div>
-
-  <!-- New Map Dialog -->
-  <div id="newMapDialog" class="modal">
-    <div class="modal-content">
-      <h2>Create New Map</h2>
-      <label>Width: <input type="number" id="mapWidthInput" value="20"></label>
-      <label>Height: <input type="number" id="mapHeightInput" value="20"></label>
-      <button id="createMapConfirm">Create</button>
-      <button id="createMapCancel">Cancel</button>
-    </div>
-  </div>
+  <div id="tilePicker" style="display: flex; flex-wrap: wrap; margin-bottom: 10px;"></div>
 
   <canvas id="mapCanvas" width="1024" height="768"></canvas>
 
-  <script type="module" src="./js/main.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/tilePicker.js"></script>
+  <script src="js/saveLoad.js"></script>
+  <script src="js/isometric.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
