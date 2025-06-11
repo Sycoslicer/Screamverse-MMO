@@ -2,24 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cipherborne Map Editor - Forge 3.1</title>
+  <title>Cipherborne Map Editor</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="toolbar">
-    <button id="newMapBtn">New Map</button>
     <select id="toolSelector">
       <option value="paint">Paint</option>
       <option value="erase">Erase</option>
+      <option value="select">Select</option>
+      <option value="event">Event</option>
     </select>
+
+    <select id="layerSelector">
+      <option value="ground">Ground</option>
+      <option value="objects">Objects</option>
+      <option value="collision">Collision</option>
+      <option value="events">Events</option>
+    </select>
+
+    <button id="newMapButton">New Map</button>
     <button id="saveButton">Save</button>
     <button id="loadButton">Load</button>
     <input type="file" id="fileLoader" style="display:none;">
   </div>
 
   <div id="tilePicker"></div>
+
+  <!-- New Map Dialog -->
+  <div id="newMapDialog" class="modal">
+    <div class="modal-content">
+      <h2>Create New Map</h2>
+      <label>Width: <input type="number" id="mapWidthInput" value="20"></label>
+      <label>Height: <input type="number" id="mapHeightInput" value="20"></label>
+      <button id="createMapConfirm">Create</button>
+      <button id="createMapCancel">Cancel</button>
+    </div>
+  </div>
+
   <canvas id="mapCanvas" width="1024" height="768"></canvas>
 
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>
