@@ -1,0 +1,6 @@
+{
+  "image": "tileset.png",
+  "tileWidth": 32,
+  "tileHeight": 32,
+  "tilesPerRow": 8
+}
