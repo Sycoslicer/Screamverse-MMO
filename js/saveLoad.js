@@ -1,22 +1,24 @@
-import { events } from './eventSystem.js';
-
-export function saveMap(map, layers) {
-  const data = { map, layers, events };
-  const json = JSON.stringify(data);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'map.json';
-  a.click();
-  URL.revokeObjectURL(url);
+export function saveMap(mapData) {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(mapData));
+  const downloadAnchorNode = document.createElement('a');
+  downloadAnchorNode.setAttribute("href", dataStr);
+  downloadAnchorNode.setAttribute("download", "map.json");
+  document.body.appendChild(downloadAnchorNode);
+  downloadAnchorNode.click();
+  downloadAnchorNode.remove();
 }
 
-export function loadMap(file, callback) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    const data = JSON.parse(e.target.result);
-    callback(data);
+export function loadMap(onLoad) {
+  const fileLoader = document.getElementById('fileLoader');
+  fileLoader.click();
+
+  fileLoader.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = event => {
+      const data = JSON.parse(event.target.result);
+      onLoad(data);
+    };
+    reader.readAsText(file);
   };
-  reader.readAsText(file);
 }
