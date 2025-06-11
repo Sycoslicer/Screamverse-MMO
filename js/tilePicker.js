@@ -1,19 +1,15 @@
-const tilePicker = document.getElementById("tilePicker");
-let selectedTile = null;
-
-export function initTilePicker() {
-  const colors = ["#666", "#888", "#aaa", "#ccc"];
-  colors.forEach(color => {
-    const btn = document.createElement("div");
-    btn.classList.add("tile-button");
-    btn.style.backgroundColor = color;
-    btn.addEventListener("click", () => {
-      selectedTile = { color };
-    });
-    tilePicker.appendChild(btn);
-  });
-}
-
-export function getSelectedTile() {
-  return selectedTile;
+export function setupTilePicker(tileset, onSelect) {
+  const tilePicker = document.getElementById('tilePicker');
+  for (let i = 0; i < tileset.columns * (tileset.image.height / tileset.tileHeight); i++) {
+    const button = document.createElement('div');
+    button.classList.add('tile-button');
+    button.style.backgroundImage = `url(tilesets/${tileset.image.src.split('/').pop()})`;
+    
+    const x = (i % tileset.columns) * tileset.tileWidth;
+    const y = Math.floor(i / tileset.columns) * tileset.tileHeight;
+    button.style.backgroundPosition = `-${x}px -${y}px`;
+    
+    button.addEventListener('click', () => onSelect(i));
+    tilePicker.appendChild(button);
+  }
 }
