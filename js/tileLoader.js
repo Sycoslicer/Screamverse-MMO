@@ -1,17 +1,24 @@
-export const tiles = [
-  { id: 1, name: 'Grass', src: 'tiles/grass.png' },
-  { id: 2, name: 'Water', src: 'tiles/water.png' },
-  { id: 3, name: 'Dirt', src: 'tiles/dirt.png' }
-];
+export const TILE_SIZE = 64;
+const TILESET_SRC = './tilesets/tileset.png';
+const TILE_COLUMNS = 24;
 
-export function loadTiles(callback) {
-  let loaded = 0;
-  tiles.forEach(tile => {
-    const img = new Image();
-    img.src = tile.src;
-    img.onload = () => {
-      tile.image = img;
-      if (++loaded === tiles.length) callback();
-    }
-  });
+let tilesetImage = null;
+
+export async function loadTileset() {
+    tilesetImage = new Image();
+    tilesetImage.src = TILESET_SRC;
+    await tilesetImage.decode();
+    return tilesetImage;
+}
+
+export function getTileImage(index) {
+    const canvas = document.createElement('canvas');
+    canvas.width = TILE_SIZE;
+    canvas.height = TILE_SIZE;
+    const ctx = canvas.getContext('2d');
+
+    const sx = (index % TILE_COLUMNS) * TILE_SIZE;
+    const sy = Math.floor(index / TILE_COLUMNS) * TILE_SIZE;
+    ctx.drawImage(tilesetImage, sx, sy, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+    return canvas;
 }
