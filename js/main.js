@@ -1,77 +1,116 @@
-import { TilePicker } from './tilePicker.js';
+import { isoToScreen, screenToIso, clamp } from './utils.js';
+import { loadTileset, getTileImage, TILE_SIZE } from './tileLoader.js';
+import { saveMap, loadMap } from './saveLoad.js';
 
-const canvas = document.getElementById("mapCanvas");
-const ctx = canvas.getContext("2d");
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
 
-let offsetX = 0;
-let offsetY = 0;
+let mapWidth = 50;
+let mapHeight = 50;
+let map = createEmptyMap(mapWidth, mapHeight);
+
+let currentTile = 0;
+let selectedTool = 'paint';
+let currentLayer = 'ground';
+
+let offsetX = canvas.width / 2;
+let offsetY = 100;
 let zoom = 1;
-let isDragging = false;
-let dragStart = {x: 0, y: 0};
-let mapData = {};
 
-const gridSize = 32;
-const mapWidth = 100;
-const mapHeight = 100;
+let tilesetImage = null;
 
-let currentTile = null;
+async function init() {
+    tilesetImage = await loadTileset();
+    draw();
+}
 
-const picker = new TilePicker(tile => {
-    currentTile = tile;
-});
+function createEmptyMap(width, height) {
+    let map = {};
+    ['ground', 'objects', 'collision', 'events'].forEach(layer => {
+        map[layer] = Array.from({ length: height }, () => Array(width).fill(0));
+    });
+    return map;
+}
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid
-    ctx.strokeStyle = '#444';
-    for (let x = 0; x < mapWidth; x++) {
-        for (let y = 0; y < mapHeight; y++) {
-            const screenX = (x * gridSize - offsetX) * zoom;
-            const screenY = (y * gridSize - offsetY) * zoom;
-            ctx.strokeRect(screenX, screenY, gridSize * zoom, gridSize * zoom);
-
-            const key = `${x},${y}`;
-            const tile = mapData[key];
-            if (tile) {
-                ctx.drawImage(
-                    tile.image,
-                    tile.x, tile.y, 32, 32,
-                    screenX, screenY, 32 * zoom, 32 * zoom
-                );
-            }
+    for (let y = 0; y < mapHeight; y++) {
+        for (let x = 0; x < mapWidth; x++) {
+            ['ground', 'objects'].forEach(layer => {
+                const tileIndex = map[layer][y][x];
+                if (tileIndex > 0) {
+                    const { screenX, screenY } = isoToScreen(x, y, TILE_SIZE, TILE_SIZE / 2);
+                    const drawX = (screenX * zoom) + offsetX;
+                    const drawY = (screenY * zoom) + offsetY;
+                    ctx.drawImage(getTileImage(tileIndex), drawX, drawY);
+                }
+            });
         }
     }
 }
 
-canvas.addEventListener("mousedown", e => {
-    if (e.button === 0) {
-        const x = Math.floor((e.offsetX / zoom + offsetX) / gridSize);
-        const y = Math.floor((e.offsetY / zoom + offsetY) / gridSize);
-        if (currentTile) {
-            mapData[`${x},${y}`] = currentTile;
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = (e.clientX - rect.left - offsetX) / zoom;
+    const clickY = (e.clientY - rect.top - offsetY) / zoom;
+    const { x, y } = screenToIso(clickX, clickY, TILE_SIZE, TILE_SIZE / 2);
+    const mapX = Math.floor(x);
+    const mapY = Math.floor(y);
+
+    if (mapX >= 0 && mapY >= 0 && mapX < mapWidth && mapY < mapHeight) {
+        if (selectedTool === 'paint') {
+            map[currentLayer][mapY][mapX] = currentTile;
+        } else if (selectedTool === 'erase') {
+            map[currentLayer][mapY][mapX] = 0;
         }
-    } else if (e.button === 1 || e.button === 2) {
-        isDragging = true;
-        dragStart = {x: e.clientX, y: e.clientY};
+        draw();
     }
 });
 
-canvas.addEventListener("mousemove", e => {
-    if (isDragging) {
-        offsetX -= (e.clientX - dragStart.x) / zoom;
-        offsetY -= (e.clientY - dragStart.y) / zoom;
-        dragStart = {x: e.clientX, y: e.clientY};
+// TOOLBARS
+document.getElementById('toolSelector').addEventListener('change', e => selectedTool = e.target.value);
+document.getElementById('layerSelector').addEventListener('change', e => currentLayer = e.target.value);
+
+document.getElementById('saveButton').addEventListener('click', () => saveMap(map));
+document.getElementById('loadButton').addEventListener('click', () => {
+    document.getElementById('fileLoader').click();
+});
+document.getElementById('fileLoader').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        map = await loadMap(file);
+        draw();
     }
 });
 
-canvas.addEventListener("mouseup", () => isDragging = false);
-canvas.addEventListener("wheel", e => {
-    zoom *= e.deltaY > 0 ? 0.9 : 1.1;
-});
-
-function loop() {
+// ZOOM & PAN CONTROL
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    zoom = clamp(zoom + (e.deltaY > 0 ? -0.1 : 0.1), 0.3, 3);
     draw();
-    requestAnimationFrame(loop);
-}
-loop();
+});
+
+let isDragging = false;
+let lastMouseX, lastMouseY;
+
+canvas.addEventListener('mousedown', e => {
+    isDragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+});
+
+canvas.addEventListener('mouseup', () => isDragging = false);
+canvas.addEventListener('mouseleave', () => isDragging = false);
+
+canvas.addEventListener('mousemove', e => {
+    if (isDragging) {
+        offsetX += (e.clientX - lastMouseX);
+        offsetY += (e.clientY - lastMouseY);
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        draw();
+    }
+});
+
+init();
