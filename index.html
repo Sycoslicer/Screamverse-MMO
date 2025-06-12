@@ -10,8 +10,6 @@
     <select id="toolSelector">
       <option value="paint">Paint</option>
       <option value="erase">Erase</option>
-      <option value="select">Select</option>
-      <option value="event">Event</option>
     </select>
 
     <select id="layerSelector">
@@ -21,20 +19,16 @@
       <option value="events">Events</option>
     </select>
 
-    <button id="newMapButton">New Map</button>
+    <select id="tilesetSelector"></select>
+
     <button id="saveButton">Save</button>
     <button id="loadButton">Load</button>
     <input type="file" id="fileLoader" style="display:none;">
   </div>
 
   <div id="tilePicker" style="display: flex; flex-wrap: wrap; margin-bottom: 10px;"></div>
-
   <canvas id="mapCanvas" width="1024" height="768"></canvas>
 
-  <script src="js/utils.js"></script>
-  <script src="js/tilePicker.js"></script>
-  <script src="js/saveLoad.js"></script>
-  <script src="js/isometric.js"></script>
-  <script src="js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
