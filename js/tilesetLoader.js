@@ -1,16 +1,8 @@
-export async function loadTileset() {
-  const response = await fetch('tilesets/tileset.json');
-  const data = await response.json();
-
-  const image = new Image();
-  image.src = `tilesets/${data.image}`;
-  
-  await new Promise(resolve => image.onload = resolve);
-
-  return {
-    image,
-    tileWidth: data.tileWidth,
-    tileHeight: data.tileHeight,
-    columns: data.columns
-  };
+export async function loadTilesetList() {
+    // Eventually this will read directory contents dynamically from server
+    return [
+        'tilesets/tileset.png',
+        'tilesets/tileset2.png',
+        'tilesets/tileset3.png'
+    ];
 }
