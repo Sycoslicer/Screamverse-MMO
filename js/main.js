@@ -1,20 +1,19 @@
-import { TILE_SIZE, TILESET, loadTilesetImage, getTileSource } from './utils.js';
-import { drawTilePicker } from './tilePicker.js';
+import { TILE_SIZE, getTileSource } from './utils.js';
+import { drawTilePicker, loadTileset, getTilesetImage } from './tilePicker.js';
 import { saveMap, loadMapFromFile } from './saveLoad.js';
+import { loadTilesetList } from './tilesetLoader.js';
 
 const canvas = document.getElementById('mapCanvas');
 const ctx = canvas.getContext('2d');
 const tilePickerDiv = document.getElementById('tilePicker');
+const tilesetSelector = document.getElementById('tilesetSelector');
 
-let mapWidth = 100;
-let mapHeight = 100;
+let mapWidth = 100, mapHeight = 100;
 let currentLayer = 'ground';
 let currentTool = 'paint';
 let selectedTile = 0;
 
-let cameraX = 0;
-let cameraY = 0;
-let scale = 1;
+let cameraX = 0, cameraY = 0, scale = 1;
 
 let map = {
     ground: Array(mapHeight).fill().map(() => Array(mapWidth).fill(0)),
@@ -23,27 +22,48 @@ let map = {
     events: Array(mapHeight).fill().map(() => Array(mapWidth).fill(0))
 };
 
-// Handle tile selection from picker
+// Load tilesets into dropdown
+async function populateTilesetSelector() {
+    const tilesets = await loadTilesetList();
+    tilesets.forEach(path => {
+        const option = document.createElement('option');
+        option.value = path;
+        option.textContent = path.split('/').pop();
+        tilesetSelector.appendChild(option);
+    });
+
+    tilesetSelector.addEventListener('change', () => {
+        loadTileset(tilesetSelector.value, () => {
+            drawTilePicker(tilePickerDiv);
+            redraw();
+        });
+    });
+
+    loadTileset(tilesets[0], () => {
+        drawTilePicker(tilePickerDiv);
+        redraw();
+    });
+}
+
+populateTilesetSelector();
+
+// Handle tile picker clicks
 tilePickerDiv.addEventListener('click', (e) => {
     if (e.target.classList.contains('tile-button')) {
         selectedTile = parseInt(e.target.dataset.tile);
     }
 });
 
-// Handle tool and layer switching
-document.getElementById('toolSelector').addEventListener('change', (e) => {
-    currentTool = e.target.value;
-});
-document.getElementById('layerSelector').addEventListener('change', (e) => {
-    currentLayer = e.target.value;
-});
+// Handle tool + layer switching
+document.getElementById('toolSelector').addEventListener('change', e => currentTool = e.target.value);
+document.getElementById('layerSelector').addEventListener('change', e => currentLayer = e.target.value);
 
-// Handle save/load
+// Save/load buttons
 document.getElementById('saveButton').addEventListener('click', () => saveMap(map));
 document.getElementById('loadButton').addEventListener('click', () => document.getElementById('fileLoader').click());
-document.getElementById('fileLoader').addEventListener('change', (e) => loadMapFromFile(e, map, redraw));
+document.getElementById('fileLoader').addEventListener('change', e => loadMapFromFile(e, map, redraw));
 
-// Handle map click
+// Tile placement logic
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) / scale + cameraX;
@@ -61,7 +81,7 @@ canvas.addEventListener('mousedown', (e) => {
     }
 });
 
-// Camera panning
+// Panning
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
 canvas.addEventListener('mousedown', (e) => {
@@ -71,7 +91,6 @@ canvas.addEventListener('mousedown', (e) => {
         panStart.y = e.clientY;
     }
 });
-
 canvas.addEventListener('mousemove', (e) => {
     if (isPanning) {
         cameraX -= (e.clientX - panStart.x) / scale;
@@ -81,7 +100,6 @@ canvas.addEventListener('mousemove', (e) => {
         redraw();
     }
 });
-
 canvas.addEventListener('mouseup', () => isPanning = false);
 canvas.addEventListener('mouseleave', () => isPanning = false);
 
@@ -92,22 +110,18 @@ canvas.addEventListener('wheel', (e) => {
     const mouseX = e.offsetX / scale + cameraX;
     const mouseY = e.offsetY / scale + cameraY;
 
-    if (e.deltaY < 0) {
-        scale *= 1 + zoomIntensity;
-    } else {
-        scale *= 1 - zoomIntensity;
-    }
+    if (e.deltaY < 0) scale *= 1 + zoomIntensity;
+    else scale *= 1 - zoomIntensity;
 
-    // Keep zoom centered on cursor
     cameraX = mouseX - e.offsetX / scale;
     cameraY = mouseY - e.offsetY / scale;
-
     redraw();
 });
 
-// Main drawing function
+// Drawing
 function redraw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const tilesetImage = getTilesetImage();
 
     for (let layer of ['ground', 'objects', 'collision', 'events']) {
         for (let y = 0; y < mapHeight; y++) {
@@ -116,7 +130,7 @@ function redraw() {
                 if (tile > 0) {
                     const src = getTileSource(tile);
                     ctx.drawImage(
-                        TILESET,
+                        tilesetImage,
                         src.sx, src.sy, TILE_SIZE, TILE_SIZE,
                         (x * TILE_SIZE - cameraX) * scale,
                         (y * TILE_SIZE - cameraY) * scale,
@@ -142,9 +156,3 @@ function redraw() {
         ctx.stroke();
     }
 }
-
-// INIT
-loadTilesetImage(() => {
-    drawTilePicker(tilePickerDiv);
-    redraw();
-});
