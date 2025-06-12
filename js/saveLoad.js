@@ -1,18 +1,18 @@
-export function saveMap(mapData) {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(mapData));
-  const downloadAnchorNode = document.createElement('a');
-  downloadAnchorNode.setAttribute("href", dataStr);
-  downloadAnchorNode.setAttribute("download", "map.json");
-  document.body.appendChild(downloadAnchorNode);
-  downloadAnchorNode.click();
-  downloadAnchorNode.remove();
+export function saveMap(map) {
+    const data = JSON.stringify(map);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'map.json';
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
-export function loadMap(file, callback) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const json = JSON.parse(e.target.result);
-    callback(json);
-  };
-  reader.readAsText(file);
+export function loadMap(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(JSON.parse(reader.result));
+        reader.readAsText(file);
+    });
 }
