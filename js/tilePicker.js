@@ -1,31 +1,37 @@
-import { TILE_WIDTH, TILE_HEIGHT, TILESET_COLUMNS } from './isometric.js';
+import { TILE_SIZE, loadTilesetImage, getTileSource } from './utils.js';
 
-export let selectedTile = 0;
-export let tilesetImage = new Image();
+let TILESET_IMAGE = null;
+let currentTilesetPath = 'tilesets/tileset.png';
+let numTiles = 0;
 
-export function loadTilePicker() {
-  const tilePicker = document.getElementById("tilePicker");
-  tilePicker.innerHTML = '';
+// Load the selected tileset image
+export function loadTileset(path, callback) {
+    currentTilesetPath = path;
+    const image = new Image();
+    image.onload = () => {
+        TILESET_IMAGE = image;
+        numTiles = Math.floor(image.width / TILE_SIZE);
+        callback();
+    };
+    image.src = path;
+}
 
-  tilesetImage.src = './tilesets/tileset.png';
-  tilesetImage.onload = () => {
-    const numTiles = TILESET_COLUMNS * (tilesetImage.height / TILE_HEIGHT);
-
+export function drawTilePicker(container) {
+    container.innerHTML = '';
     for (let i = 0; i < numTiles; i++) {
-      const tileDiv = document.createElement("div");
-      tileDiv.className = "tile-button";
-      tileDiv.style.backgroundImage = `url(./tilesets/tileset.png)`;
-
-      const x = (i % TILESET_COLUMNS) * TILE_WIDTH;
-      const y = Math.floor(i / TILESET_COLUMNS) * TILE_HEIGHT;
-      tileDiv.style.backgroundPosition = `-${x}px -${y}px`;
-      tileDiv.dataset.tileIndex = i;
-
-      tileDiv.addEventListener('click', () => {
-        selectedTile = parseInt(tileDiv.dataset.tileIndex);
-      });
-
-      tilePicker.appendChild(tileDiv);
+        const button = document.createElement('div');
+        button.className = 'tile-button';
+        button.dataset.tile = i + 1;
+        button.style.backgroundImage = `url(${currentTilesetPath})`;
+        button.style.backgroundPosition = `-${i * TILE_SIZE}px 0px`;
+        container.appendChild(button);
     }
-  };
+}
+
+export function getTilesetImage() {
+    return TILESET_IMAGE;
+}
+
+export function getNumTiles() {
+    return numTiles;
 }
