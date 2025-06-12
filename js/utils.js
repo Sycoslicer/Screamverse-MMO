@@ -1,8 +1,13 @@
-export const TILE_SIZE = 32;
+export function loadImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+}
 
-export function getTileSource(tileIndex) {
-    return {
-        sx: (tileIndex - 1) * TILE_SIZE,
-        sy: 0
-    };
+export function getTilesetList() {
+    return fetch('./tilesets/tilesets.json')
+        .then(response => response.json());
 }
