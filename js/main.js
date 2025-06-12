@@ -2,6 +2,7 @@
 
 import { getMousePos, createEmptyGrid, deepCopy } from './utils.js';
 import { Clipboard } from './clipboard.js';
+import { Camera } from './camera.js';
 
 const canvas = document.getElementById('mapCanvas');
 const ctx = canvas.getContext('2d');
@@ -22,8 +23,19 @@ let selecting = false;
 let selectStart = null;
 let selectEnd = null;
 
+// Viewport camera
+const camera = new Camera();
+let panning = false;
+let lastPan = { x: 0, y: 0 };
+
 canvas.addEventListener('mousedown', (e) => {
-  const pos = getMousePos(canvas, e, { zoom: 1, offsetX: 0, offsetY: 0 }, tileSize);
+  if (e.button === 1) { // middle mouse for panning
+    panning = true;
+    lastPan = { x: e.clientX, y: e.clientY };
+    return;
+  }
+
+  const pos = getMousePos(canvas, e, camera, tileSize);
 
   if (currentTool === 'select') {
     selecting = true;
@@ -32,19 +44,38 @@ canvas.addEventListener('mousedown', (e) => {
   } else if (currentTool === 'paint') {
     saveState();
     grid[pos.y][pos.x] = selectedTile;
+    draw();
   }
 });
 
 canvas.addEventListener('mousemove', (e) => {
+  if (panning) {
+    const dx = e.clientX - lastPan.x;
+    const dy = e.clientY - lastPan.y;
+    camera.pan(-dx, -dy);
+    lastPan = { x: e.clientX, y: e.clientY };
+    draw();
+  }
+
   if (selecting) {
-    const pos = getMousePos(canvas, e, { zoom: 1, offsetX: 0, offsetY: 0 }, tileSize);
+    const pos = getMousePos(canvas, e, camera, tileSize);
     selectEnd = pos;
     draw();
   }
 });
 
-canvas.addEventListener('mouseup', () => {
+canvas.addEventListener('mouseup', (e) => {
+  if (e.button === 1) {
+    panning = false;
+    return;
+  }
   selecting = false;
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  camera.applyZoom(-e.deltaY * 0.001, e.clientX, e.clientY, canvas);
+  draw();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -87,8 +118,9 @@ function undo() {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#111";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(camera.offsetX * camera.zoom, camera.offsetY * camera.zoom);
+  ctx.scale(camera.zoom, camera.zoom);
 
   for (let y = 0; y < mapHeight; y++) {
     for (let x = 0; x < mapWidth; x++) {
@@ -109,6 +141,8 @@ function draw() {
     ctx.lineWidth = 2;
     ctx.strokeRect(startX * tileSize, startY * tileSize, (endX - startX + 1) * tileSize, (endY - startY + 1) * tileSize);
   }
+
+  ctx.restore();
 }
 
 draw();
