@@ -34,3 +34,10 @@ canvas#mapCanvas {
   border: 1px solid #333;
   cursor: crosshair;
 }
+
+#selectionBox {
+  position: absolute;
+  border: 2px dashed rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  z-index: 1000;
+}
